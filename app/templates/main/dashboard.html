@@ -1,0 +1,462 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Ubuntu Server Dashboard{% endblock %}
+
+{% block content %}
+<!-- Welcome Header -->
+<div class="mb-8">
+    <h1 class="text-3xl font-bold text-white mb-2">Welcome back, {{ current_user.name }}!</h1>
+    <p class="text-slate-400">Here's what's happening with your Ubuntu server today.</p>
+</div>
+
+<!-- User Profile Card -->
+<div class="glass-effect rounded-xl border border-slate-700 p-6 mb-6 card-hover">
+    <div class="flex justify-between items-start mb-4">
+        <h2 class="text-xl font-semibold text-white flex items-center gap-3">
+            <i class="fas fa-user text-blue-400"></i>
+            User Profile
+        </h2>
+        <span class="px-3 py-1 rounded-full text-xs font-medium {{ 'bg-green-500/20 text-green-400' if current_user.is_active else 'bg-slate-500/20 text-slate-400' }}">
+            {{ current_user.role }}
+        </span>
+    </div>
+    
+    <div class="flex flex-col sm:flex-row gap-6">
+        <div class="flex-shrink-0">
+            <img src="{{ current_user.profile_image_url }}" alt="Profile" 
+                 class="w-16 h-16 rounded-xl object-cover border-2 border-slate-600">
+        </div>
+        <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="text-sm font-medium text-slate-400">Email</label>
+                <p class="text-white mt-1">{{ current_user.email }}</p>
+            </div>
+            <div>
+                <label class="text-sm font-medium text-slate-400">Last Login</label>
+                <p class="text-white mt-1">
+                    {% if current_user.last_login %}
+                        {{ current_user.last_login.strftime('%Y-%m-%d %H:%M:%S') }}
+                    {% else %}
+                        Never
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Stats Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+    <!-- CPU Usage -->
+    <div class="glass-effect rounded-xl border border-slate-700 p-6 card-hover">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-slate-400">CPU Usage</p>
+                <p class="text-2xl font-bold text-white">{{ system_info.cpu_percent }}%</p>
+            </div>
+            <div class="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                <i class="fas fa-microchip text-blue-400 text-xl"></i>
+            </div>
+        </div>
+        <div class="mt-4 w-full bg-slate-700 rounded-full h-2">
+            <div class="bg-blue-500 h-2 rounded-full transition-all duration-300" style="width: {{ system_info.cpu_percent }}%"></div>
+        </div>
+    </div>
+    
+    <!-- Memory Usage -->
+    <div class="glass-effect rounded-xl border border-slate-700 p-6 card-hover">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-slate-400">Memory</p>
+                <p class="text-2xl font-bold text-white">{{ "%.1f"|format(system_info.memory_percent) }}%</p>
+            </div>
+            <div class="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
+                <i class="fas fa-memory text-green-400 text-xl"></i>
+            </div>
+        </div>
+        <div class="mt-4 w-full bg-slate-700 rounded-full h-2">
+            <div class="bg-green-500 h-2 rounded-full transition-all duration-300" style="width: {{ system_info.memory_percent }}%"></div>
+        </div>
+    </div>
+    
+    <!-- Disk Usage -->
+    <div class="glass-effect rounded-xl border border-slate-700 p-6 card-hover">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-slate-400">Disk Space</p>
+                <p class="text-2xl font-bold text-white">{{ "%.1f"|format(system_info.disk_percent) }}%</p>
+            </div>
+            <div class="w-12 h-12 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                <i class="fas fa-hdd text-yellow-400 text-xl"></i>
+            </div>
+        </div>
+        <div class="mt-4 w-full bg-slate-700 rounded-full h-2">
+            <div class="bg-yellow-500 h-2 rounded-full transition-all duration-300" style="width: {{ system_info.disk_percent }}%"></div>
+        </div>
+    </div>
+    
+    <!-- Uptime -->
+    <div class="glass-effect rounded-xl border border-slate-700 p-6 card-hover">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-slate-400">Uptime</p>
+                <p class="text-lg font-bold text-white">{{ system_info.uptime }}</p>
+            </div>
+            <div class="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                <i class="fas fa-clock text-purple-400 text-xl"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Information -->
+<div class="glass-effect rounded-xl border border-slate-700 card-hover">
+    <div class="flex justify-between items-center p-6 border-b border-slate-700">
+        <h2 class="text-xl font-semibold text-white flex items-center gap-3">
+            <i class="fas fa-server text-blue-400"></i>
+            System Information
+        </h2>
+        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center gap-2" onclick="refreshSystemInfo()">
+            <i class="fas fa-sync-alt"></i>
+            Refresh
+        </button>
+    </div>
+    <div class="p-6">
+        <!-- Network Information -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="bg-slate-800 rounded-lg p-4 text-center border border-slate-600">
+                <h6 class="text-sm font-medium text-slate-400 mb-2">Public IP</h6>
+                <p id="public-ip" class="text-white font-semibold">Loading...</p>
+            </div>
+            <div class="bg-slate-800 rounded-lg p-4 text-center border border-slate-600">
+                <h6 class="text-sm font-medium text-slate-400 mb-2">Private IP</h6>
+                <p id="private-ip" class="text-white font-semibold">Loading...</p>
+            </div>
+            <div class="bg-slate-800 rounded-lg p-4 text-center border border-slate-600">
+                <h6 class="text-sm font-medium text-slate-400 mb-2">Hostname</h6>
+                <p id="hostname" class="text-white font-semibold">Loading...</p>
+            </div>
+        </div>
+        
+        <!-- Detailed System Info -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                    <i class="fas fa-info-circle text-blue-400"></i>
+                    System Details
+                </h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center py-2 border-b border-slate-700">
+                        <span class="text-slate-400">Operating System</span>
+                        <span id="os-info" class="text-white font-medium">{{ system_info.os_info or 'Loading...' }}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-b border-slate-700">
+                        <span class="text-slate-400">Kernel Version</span>
+                        <span id="kernel-version" class="text-white font-medium">{{ system_info.kernel_version or 'Loading...' }}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-b border-slate-700">
+                        <span class="text-slate-400">Architecture</span>
+                        <span id="architecture" class="text-white font-medium">{{ system_info.architecture or 'Loading...' }}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2">
+                        <span class="text-slate-400">CPU Cores</span>
+                        <span id="cpu-cores" class="text-white font-medium">{{ system_info.cpu_cores or 'Loading...' }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                    <i class="fas fa-memory text-green-400"></i>
+                    Memory Details
+                </h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center py-2 border-b border-slate-700">
+                        <span class="text-slate-400">Total Memory</span>
+                        <span id="total-memory" class="text-white font-medium">{{ system_info.total_memory or 'Loading...' }}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-b border-slate-700">
+                        <span class="text-slate-400">Available Memory</span>
+                        <span id="available-memory" class="text-white font-medium">{{ system_info.available_memory or 'Loading...' }}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-b border-slate-700">
+                        <span class="text-slate-400">Total Disk</span>
+                        <span id="total-disk" class="text-white font-medium">{{ system_info.total_disk or 'Loading...' }}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2">
+                        <span class="text-slate-400">Free Disk</span>
+                        <span id="free-disk" class="text-white font-medium">{{ system_info.free_disk or 'Loading...' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Service Status -->
+<div class="glass-effect rounded-xl border border-slate-700 card-hover mb-6">
+    <div class="flex justify-between items-center p-6 border-b border-slate-700">
+        <h2 class="text-xl font-semibold text-white flex items-center gap-3">
+            <i class="fas fa-cogs text-blue-400"></i>
+            Service Status
+        </h2>
+    </div>
+    <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex justify-between items-center p-4 bg-slate-800 rounded-lg border border-slate-600">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-shield-alt text-blue-400 text-xl"></i>
+                    <span class="text-white font-medium">OpenVPN</span>
+                </div>
+                <span id="openvpn-status" class="px-3 py-1 rounded-full text-xs font-medium bg-slate-600 text-slate-300">Loading...</span>
+            </div>
+            
+            <div class="flex justify-between items-center p-4 bg-slate-800 rounded-lg border border-slate-600">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-network-wired text-green-400 text-xl"></i>
+                    <span class="text-white font-medium">Squid Proxy</span>
+                </div>
+                <span id="squid-status" class="px-3 py-1 rounded-full text-xs font-medium bg-slate-600 text-slate-300">Loading...</span>
+            </div>
+        </div>
+        
+        {% if current_user.is_admin() %}
+        <div class="mt-6">
+            <h4 class="text-lg font-semibold text-white mb-4">Service Controls</h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2" onclick="controlService('openvpn', 'start')">
+                    <i class="fas fa-play"></i>
+                    Start OpenVPN
+                </button>
+                <button class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2" onclick="controlService('openvpn', 'stop')">
+                    <i class="fas fa-stop"></i>
+                    Stop OpenVPN
+                </button>
+                <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2" onclick="controlService('openvpn', 'restart')">
+                    <i class="fas fa-redo"></i>
+                    Restart OpenVPN
+                </button>
+                
+                <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2" onclick="controlService('squid', 'start')">
+                    <i class="fas fa-play"></i>
+                    Start Squid
+                </button>
+                <button class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2" onclick="controlService('squid', 'stop')">
+                    <i class="fas fa-stop"></i>
+                    Stop Squid
+                </button>
+                <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2" onclick="controlService('squid', 'restart')">
+                    <i class="fas fa-redo"></i>
+                    Restart Squid
+                </button>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Live Chat -->
+<div class="glass-effect rounded-xl border border-slate-700 card-hover">
+    <div class="flex justify-between items-center p-6 border-b border-slate-700">
+        <h2 class="text-xl font-semibold text-white flex items-center gap-3">
+            <i class="fas fa-comments text-blue-400"></i>
+            Live Chat
+        </h2>
+    </div>
+    <div class="p-6">
+        <div id="chat-messages" class="h-80 overflow-y-auto bg-slate-800 p-4 rounded-lg border border-slate-600 mb-4">
+            <!-- Chat messages will be loaded here -->
+        </div>
+        <div class="flex gap-3">
+            <input type="text" id="chat-input" placeholder="Type a message..." 
+                   class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+            <button id="send-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2">
+                <i class="fas fa-paper-plane"></i>
+                Send
+            </button>
+        </div>
+    </div>
+</div>
+    </div>
+    <div class="flex gap-3">
+        <input type="text" id="chat-input" placeholder="Type a message..." 
+               class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+        <button id="send-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2">
+            <i class="fas fa-paper-plane"></i>
+            Send
+        </button>
+    </div>
+</div>
+
+<!-- SMB Shares -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="fas fa-folder"></i> SMB Shares
+        </h3>
+        <a href="{{ url_for('main.browse_smb') }}" class="btn btn-info">
+            <i class="fas fa-eye"></i> Browse All
+        </a>
+    </div>
+    <div id="smb-files">
+        {% if smb_files %}
+        <div class="grid grid-2">
+            {% for file in smb_files[:6] %}
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background-color: rgba(255, 255, 255, 0.05); border-radius: 8px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-{{ 'folder' if file.type == 'directory' else 'file' }}" style="color: var(--primary-color);"></i>
+                    <span>{{ file.name }}</span>
+                </div>
+                {% if file.type == 'file' %}
+                <a href="{{ url_for('main.download_smb', filename=file.path) }}" class="btn btn-info btn-sm">
+                    <i class="fas fa-download"></i>
+                </a>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="text-align: center; color: rgba(255, 255, 255, 0.6);">No SMB shares available</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Command Line (Admin Only) -->
+{% if current_user.is_admin() %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="fas fa-terminal"></i> Command Line
+        </h3>
+    </div>
+    <form method="POST" action="{{ url_for('main.execute_command') }}">
+        {{ csrf_token() }}
+        <div style="display: flex; gap: 10px;">
+            <input type="text" name="command" class="form-control" placeholder="Enter command (be careful!)" required>
+            <button type="submit" class="btn btn-warning">
+                <i class="fas fa-play"></i> Execute
+            </button>
+        </div>
+    </form>
+    <div style="margin-top: 15px; padding: 10px; background-color: rgba(0, 0, 0, 0.5); border-radius: 8px; font-family: monospace; color: #00ff00;">
+        <strong>Warning:</strong> Command execution can be dangerous. Only run commands you understand.
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Auto-refresh system info every 5 seconds
+function refreshSystemInfo() {
+    fetch('/api/system_info')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('cpu-usage').textContent = data.cpu_percent + '%';
+            document.getElementById('memory-usage').textContent = data.memory_percent + '%';
+            document.getElementById('disk-usage').textContent = data.disk_percent + '%';
+            document.getElementById('uptime').textContent = data.uptime;
+            document.getElementById('public-ip').textContent = data.public_ip;
+            document.getElementById('private-ip').textContent = data.private_ip;
+            document.getElementById('hostname').textContent = data.hostname;
+        })
+        .catch(error => console.error('Error fetching system info:', error));
+}
+
+// Auto-refresh service status
+function refreshServiceStatus() {
+    ['openvpn', 'squid'].forEach(service => {
+        fetch(`/api/service_status/${service}`)
+            .then(response => response.json())
+            .then(data => {
+                const element = document.getElementById(service + '-status');
+                element.textContent = data.status;
+                element.className = 'status-badge status-' + (data.status === 'active' ? 'active' : 'inactive');
+            })
+            .catch(error => console.error(`Error fetching ${service} status:`, error));
+    });
+}
+
+// Load chat messages
+function loadChatMessages() {
+    fetch('/api/chat_messages')
+        .then(response => response.json())
+        .then(data => {
+            const chatContainer = document.getElementById('chat-messages');
+            chatContainer.innerHTML = '';
+            
+            data.forEach(message => {
+                const messageDiv = document.createElement('div');
+                messageDiv.style.marginBottom = '10px';
+                messageDiv.innerHTML = `
+                    <strong style="color: var(--primary-color);">${message.username}:</strong>
+                    <span>${message.content}</span>
+                    <small style="color: rgba(255, 255, 255, 0.6); float: right;">
+                        ${new Date(message.timestamp).toLocaleTimeString()}
+                    </small>
+                `;
+                chatContainer.appendChild(messageDiv);
+            });
+            
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        })
+        .catch(error => console.error('Error loading chat messages:', error));
+}
+
+// Send chat message
+document.getElementById('chat-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const input = document.getElementById('chat-input');
+    const message = input.value.trim();
+    
+    if (message) {
+        fetch('/main/send_message', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: 'message=' + encodeURIComponent(message)
+        })
+        .then(() => {
+            input.value = '';
+            loadChatMessages();
+        })
+        .catch(error => console.error('Error sending message:', error));
+    }
+});
+
+// Control services (admin only)
+{% if current_user.is_admin() %}
+function controlService(service, action) {
+    if (confirm(`Are you sure you want to ${action} ${service}?`)) {
+        fetch('/admin/control_service', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: `service=${service}&action=${action}`
+        })
+        .then(() => {
+            setTimeout(refreshServiceStatus, 2000); // Refresh after 2 seconds
+        })
+        .catch(error => console.error('Error controlling service:', error));
+    }
+}
+{% endif %}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    refreshSystemInfo();
+    refreshServiceStatus();
+    loadChatMessages();
+    
+    // Set up auto-refresh intervals
+    setInterval(refreshSystemInfo, 5000);    // Every 5 seconds
+    setInterval(refreshServiceStatus, 10000); // Every 10 seconds
+    setInterval(loadChatMessages, 3000);     // Every 3 seconds
+});
+</script>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Ubuntu Server Dashboard{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: center; align-items: center; min-height: 80vh;">
+    <div class="card" style="width: 100%; max-width: 400px;">
+        <div class="card-header">
+            <h2 class="card-title">
+                <img src="{{ config.MAIN_LOGO_URL }}" alt="Logo" style="width: 50px; height: 50px; border-radius: 50%;">
+                Login
+            </h2>
+        </div>
+        
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            
+            <div class="form-group">
+                {{ form.username.label(class="form-label") }}
+                {{ form.username(class="form-control", placeholder="Enter your username") }}
+                {% for error in form.username.errors %}
+                <div class="alert alert-error">{{ error }}</div>
+                {% endfor %}
+            </div>
+            
+            <div class="form-group">
+                {{ form.password.label(class="form-label") }}
+                {{ form.password(class="form-control", placeholder="Enter your password") }}
+                {% for error in form.password.errors %}
+                <div class="alert alert-error">{{ error }}</div>
+                {% endfor %}
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">
+                    {{ form.remember_me() }} Remember me
+                </label>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%;">
+                <i class="fas fa-sign-in-alt"></i> Login
+            </button>
+        </form>
+        
+        <div style="margin-top: 20px; text-align: center; color: rgba(255, 255, 255, 0.7);">
+            <p>Default credentials:</p>
+            <p><strong>Username:</strong> admin</p>
+            <p><strong>Password:</strong> admin123</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

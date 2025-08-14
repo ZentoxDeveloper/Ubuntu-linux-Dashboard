@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Logs - Ubuntu Server Dashboard{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="fas fa-list"></i> Audit Logs
+        </h3>
+        <button class="btn btn-info" onclick="location.reload()">
+            <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+    </div>
+    
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>User</th>
+                <th>Action</th>
+                <th>Description</th>
+                <th>IP Address</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs.items %}
+            <tr>
+                <td>{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                <td>
+                    {% if log.user %}
+                        <span class="status-badge status-{{ 'active' if log.user.is_active else 'inactive' }}">
+                            {{ log.user.username }}
+                        </span>
+                    {% else %}
+                        <span class="status-badge status-unknown">System</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% set action_class = 'info' %}
+                    {% if 'LOGIN' in log.action %}
+                        {% set action_class = 'active' %}
+                    {% elif 'FAILED' in log.action or 'DELETE' in log.action %}
+                        {% set action_class = 'inactive' %}
+                    {% elif 'CREATE' in log.action or 'START' in log.action %}
+                        {% set action_class = 'active' %}
+                    {% endif %}
+                    <span class="status-badge status-{{ action_class }}">
+                        {{ log.action }}
+                    </span>
+                </td>
+                <td>{{ log.description }}</td>
+                <td>{{ log.ip_address or 'Unknown' }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" style="text-align: center; color: rgba(255, 255, 255, 0.6);">
+                    No audit logs found.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <!-- Pagination -->
+    {% if logs.pages > 1 %}
+    <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px;">
+        {% if logs.has_prev %}
+        <a href="{{ url_for('admin.audit_logs', page=logs.prev_num) }}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-chevron-left"></i> Previous
+        </a>
+        {% endif %}
+        
+        <span style="color: rgba(255, 255, 255, 0.8);">
+            Page {{ logs.page }} of {{ logs.pages }} ({{ logs.total }} total)
+        </span>
+        
+        {% if logs.has_next %}
+        <a href="{{ url_for('admin.audit_logs', page=logs.next_num) }}" class="btn btn-secondary btn-sm">
+            Next <i class="fas fa-chevron-right"></i>
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h4 class="card-title">
+            <i class="fas fa-filter"></i> Log Statistics
+        </h4>
+    </div>
+    <div class="grid grid-4">
+        <div style="text-align: center;">
+            <h5>Total Logs</h5>
+            <p style="font-size: 1.5rem; font-weight: bold; color: var(--primary-color);">
+                {{ logs.total }}
+            </p>
+        </div>
+        <div style="text-align: center;">
+            <h5>Total Logs</h5>
+            <p style="font-size: 1.5rem; font-weight: bold; color: var(--success-color);">
+                {{ logs.items | length if logs.items else 0 }}
+            </p>
+        </div>
+        <div style="text-align: center;">
+            <h5>Failed Logins</h5>
+            <p style="font-size: 1.5rem; font-weight: bold; color: var(--danger-color);">
+                {% set failed_count = 0 %}
+                {% for log in logs.items %}
+                    {% if 'FAILED' in log.action %}
+                        {% set failed_count = failed_count + 1 %}
+                    {% endif %}
+                {% endfor %}
+                {{ failed_count }}
+            </p>
+        </div>
+        <div style="text-align: center;">
+            <h5>Admin Actions</h5>
+            <p style="font-size: 1.5rem; font-weight: bold; color: var(--warning-color);">
+                {% set admin_count = 0 %}
+                {% for log in logs.items %}
+                    {% if 'USER_' in log.action %}
+                        {% set admin_count = admin_count + 1 %}
+                    {% endif %}
+                {% endfor %}
+                {{ admin_count }}
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

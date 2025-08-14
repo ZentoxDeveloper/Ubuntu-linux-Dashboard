@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}SMB Browser - Ubuntu Server Dashboard{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="fas fa-folder"></i> SMB File Browser
+        </h3>
+        <div>
+            {% if current_path %}
+            <a href="{{ url_for('main.browse_smb', path='') }}" class="btn btn-secondary">
+                <i class="fas fa-home"></i> Root
+            </a>
+            {% endif %}
+            <a href="{{ url_for('main.index') }}" class="btn btn-info">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+    
+    {% if current_path %}
+    <div style="padding: 15px; background-color: rgba(255, 255, 255, 0.1); border-radius: 8px; margin-bottom: 20px;">
+        <strong>Current Path:</strong> /{{ current_path }}
+    </div>
+    {% endif %}
+    
+    {% if smb_files %}
+    <div class="grid grid-1">
+        {% for file in smb_files %}
+        <div class="card" style="margin: 0; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px;">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <i class="fas fa-{{ 'folder' if file.type == 'directory' else 'file' }}" 
+                       style="font-size: 1.5rem; color: {{ 'var(--primary-color)' if file.type == 'directory' else 'var(--info-color)' }};"></i>
+                    <div>
+                        <div style="font-weight: bold;">{{ file.name }}</div>
+                        {% if file.type == 'file' %}
+                        <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7);">
+                            Size: {{ file.size | filesizeformat if file.size else 'Unknown' }}
+                            {% if file.modified %}
+                            | Modified: {{ file.modified if file.modified is string else file.modified.strftime('%Y-%m-%d %H:%M') if file.modified else 'Unknown' }}
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7);">
+                            Directory
+                            {% if file.size %}
+                            | Size: {{ file.size | filesizeformat }}
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 10px;">
+                    {% if file.type == 'directory' %}
+                    <a href="{{ url_for('main.browse_smb', path=file.path) }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-folder-open"></i> Open
+                    </a>
+                    {% elif file.type == 'file' %}
+                    <a href="{{ url_for('main.download_smb', filename=file.path) }}" class="btn btn-success btn-sm">
+                        <i class="fas fa-download"></i> Download
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.6);">
+        <i class="fas fa-folder-open" style="font-size: 3rem; margin-bottom: 20px;"></i>
+        <h4>No Files Found</h4>
+        <p>This directory is empty or SMB share is not accessible.</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h4 class="card-title">
+            <i class="fas fa-info-circle"></i> SMB Share Information
+        </h4>
+    </div>
+    <div class="grid grid-2">
+        <div>
+            <strong>SMB Path:</strong><br>
+            {{ config.BASE_SMB_PATH }}
+        </div>
+        <div>
+            <strong>Current Location:</strong><br>
+            {{ '/' + current_path if current_path else '/' }}
+        </div>
+    </div>
+    
+    {% if not smb_files %}
+    <div style="margin-top: 20px;">
+        <h5>Troubleshooting SMB Access</h5>
+        <ul style="margin-left: 20px;">
+            <li>Ensure SMB share is mounted at the configured path</li>
+            <li>Check file permissions for the web server user</li>
+            <li>Verify network connectivity to the SMB server</li>
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

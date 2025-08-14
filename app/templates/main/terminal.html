@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Terminal - Ubuntu Server Dashboard{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="fas fa-terminal"></i> Web Terminal
+        </h3>
+        <div>
+            <button onclick="clearTerminal()" class="btn btn-warning">
+                <i class="fas fa-trash"></i> Clear
+            </button>
+            <a href="{{ url_for('main.index') }}" class="btn btn-info">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+    
+    <div style="background: #1e1e1e; border-radius: 8px; padding: 20px; font-family: 'Courier New', monospace;">
+        <div id="terminal-output" style="height: 400px; overflow-y: auto; margin-bottom: 15px; padding: 10px; background: #000; border-radius: 5px; color: #00ff00;">
+            <div style="color: #888;">Ubuntu Server Dashboard - Web Terminal</div>
+            <div style="color: #888;">Type commands below and press Enter to execute</div>
+            <div style="color: #888;">Warning: Use with caution - commands are executed with web server privileges</div>
+            <div style="margin: 10px 0; border-top: 1px solid #333;"></div>
+        </div>
+        
+        <form id="terminal-form" onsubmit="executeCommand(event)">
+            {{ form.hidden_tag() }}
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="color: #00ff00; font-weight: bold;">$</span>
+                {{ form.command(id="command-input", class="form-control", style="background: #333; color: #00ff00; border: 1px solid #555; font-family: 'Courier New', monospace;", placeholder="Enter command...") }}
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-play"></i> Execute
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    {% if output %}
+    <div style="margin-top: 20px;">
+        <h5><i class="fas fa-receipt"></i> Last Command Output:</h5>
+        <pre style="background: #1e1e1e; color: #00ff00; padding: 15px; border-radius: 5px; overflow-x: auto; max-height: 300px; overflow-y: auto;">{{ output }}</pre>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h4 class="card-title">
+            <i class="fas fa-info-circle"></i> Terminal Information
+        </h4>
+    </div>
+    <div style="color: rgba(255,255,255,0.8);">
+        <h5>Quick Commands:</h5>
+        <div class="grid grid-3" style="gap: 10px; margin-bottom: 20px;">
+            <button onclick="setCommand('ls -la')" class="btn btn-secondary btn-sm">ls -la</button>
+            <button onclick="setCommand('df -h')" class="btn btn-secondary btn-sm">df -h</button>
+            <button onclick="setCommand('free -h')" class="btn btn-secondary btn-sm">free -h</button>
+            <button onclick="setCommand('ps aux')" class="btn btn-secondary btn-sm">ps aux</button>
+            <button onclick="setCommand('top -n 1')" class="btn btn-secondary btn-sm">top -n 1</button>
+            <button onclick="setCommand('systemctl status')" class="btn btn-secondary btn-sm">systemctl status</button>
+            <button onclick="setCommand('netstat -tulpn')" class="btn btn-secondary btn-sm">netstat -tulpn</button>
+            <button onclick="setCommand('uname -a')" class="btn btn-secondary btn-sm">uname -a</button>
+            <button onclick="setCommand('uptime')" class="btn btn-secondary btn-sm">uptime</button>
+        </div>
+        
+        <div style="padding: 15px; background: rgba(220,53,69,0.2); border-radius: 5px; border-left: 4px solid #dc3545;">
+            <strong>🔒 Security Notice:</strong>
+            <ul style="margin-top: 10px; margin-bottom: 0;">
+                <li>Commands are executed with web server privileges</li>
+                <li>Avoid running destructive commands or commands that require user input</li>
+                <li>Long-running commands may timeout</li>
+                <li>Be careful with commands that modify system files</li>
+            </ul>
+        </div>
+        
+        <div style="margin-top: 15px; padding: 15px; background: rgba(255,193,7,0.2); border-radius: 5px; border-left: 4px solid #ffc107;">
+            <strong>💡 Tips:</strong>
+            <ul style="margin-top: 10px; margin-bottom: 0;">
+                <li>Use <code>ls</code> to list files and directories</li>
+                <li>Use <code>cd</code> commands carefully - working directory resets between commands</li>
+                <li>Use <code>sudo</code> prefix for administrative commands (if configured)</li>
+                <li>Use <code>|</code> pipes and <code>&gt;</code> redirects for better output control</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+function executeCommand(event) {
+    event.preventDefault();
+    const form = event.target;
+    const commandInput = document.getElementById('command-input');
+    const command = commandInput.value.trim();
+    
+    if (!command) return;
+    
+    // Add command to terminal output
+    const terminalOutput = document.getElementById('terminal-output');
+    const commandLine = document.createElement('div');
+    commandLine.innerHTML = `<span style="color: #00ff00;">$ ${command}</span>`;
+    terminalOutput.appendChild(commandLine);
+    
+    // Add loading indicator
+    const loadingLine = document.createElement('div');
+    loadingLine.innerHTML = '<span style="color: #888;">Executing...</span>';
+    loadingLine.id = 'loading-indicator';
+    terminalOutput.appendChild(loadingLine);
+    
+    // Scroll to bottom
+    terminalOutput.scrollTop = terminalOutput.scrollHeight;
+    
+    // Submit form
+    const formData = new FormData(form);
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData
+    }).then(response => response.text())
+    .then(html => {
+        // Parse response to get output
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const outputElement = doc.querySelector('pre');
+        const output = outputElement ? outputElement.textContent : 'Command executed (no output)';
+        
+        // Remove loading indicator
+        const loading = document.getElementById('loading-indicator');
+        if (loading) loading.remove();
+        
+        // Add output to terminal
+        const outputLine = document.createElement('div');
+        outputLine.innerHTML = `<pre style="margin: 0; white-space: pre-wrap; color: #ccc;">${output}</pre>`;
+        terminalOutput.appendChild(outputLine);
+        
+        // Add separator
+        const separator = document.createElement('div');
+        separator.innerHTML = '<div style="margin: 5px 0;"></div>';
+        terminalOutput.appendChild(separator);
+        
+        // Scroll to bottom
+        terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        
+        // Clear input
+        commandInput.value = '';
+    }).catch(error => {
+        // Remove loading indicator
+        const loading = document.getElementById('loading-indicator');
+        if (loading) loading.remove();
+        
+        // Add error to terminal
+        const errorLine = document.createElement('div');
+        errorLine.innerHTML = `<span style="color: #ff6b6b;">Error: ${error.message}</span>`;
+        terminalOutput.appendChild(errorLine);
+        
+        // Scroll to bottom
+        terminalOutput.scrollTop = terminalOutput.scrollHeight;
+    });
+}
+
+function setCommand(command) {
+    document.getElementById('command-input').value = command;
+    document.getElementById('command-input').focus();
+}
+
+function clearTerminal() {
+    const terminalOutput = document.getElementById('terminal-output');
+    terminalOutput.innerHTML = `
+        <div style="color: #888;">Ubuntu Server Dashboard - Web Terminal</div>
+        <div style="color: #888;">Type commands below and press Enter to execute</div>
+        <div style="color: #888;">Warning: Use with caution - commands are executed with web server privileges</div>
+        <div style="margin: 10px 0; border-top: 1px solid #333;"></div>
+    `;
+}
+
+// Focus on command input when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('command-input').focus();
+});
+
+// Handle Enter key in command input
+document.getElementById('command-input').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        executeCommand(e);
+    }
+});
+</script>
+{% endblock %}

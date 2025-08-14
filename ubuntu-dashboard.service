@@ -1,0 +1,17 @@
+[Unit]
+Description=Ubuntu Server Dashboard
+After=network.target
+
+[Service]
+Type=notify
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/ubuntu-dashboard
+Environment=PATH=/opt/ubuntu-dashboard/venv/bin
+ExecStart=/opt/ubuntu-dashboard/venv/bin/gunicorn --workers 4 --bind 0.0.0.0:5000 --timeout 120 run:app
+ExecReload=/bin/kill -s HUP $MAINPID
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}Services - Ubuntu Server Dashboard{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="fas fa-cogs"></i> Service Management
+        </h3>
+        <button class="btn btn-info" onclick="refreshServices()">
+            <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+    </div>
+    
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Service Name</th>
+                <th>Status</th>
+                <th>Last Checked</th>
+                <th>Auto Start</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="services-table">
+            {% for service in services %}
+            <tr>
+                <td>{{ service.service_name }}</td>
+                <td>
+                    <span class="status-badge status-{{ 'active' if service.status == 'active' else 'inactive' }}">
+                        {{ service.status|title }}
+                    </span>
+                </td>
+                <td>{{ service.last_checked.strftime('%Y-%m-%d %H:%M:%S') if service.last_checked else 'Never' }}</td>
+                <td>
+                    <span class="status-badge status-{{ 'active' if service.auto_start else 'inactive' }}">
+                        {{ 'Yes' if service.auto_start else 'No' }}
+                    </span>
+                </td>
+                <td>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn btn-success btn-sm" onclick="controlService('{{ service.service_name }}', 'start')">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="controlService('{{ service.service_name }}', 'stop')">
+                            <i class="fas fa-stop"></i>
+                        </button>
+                        <button class="btn btn-info btn-sm" onclick="controlService('{{ service.service_name }}', 'restart')">
+                            <i class="fas fa-redo"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" style="text-align: center; color: rgba(255, 255, 255, 0.6);">
+                    No services configured. Add services by using the form below.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="fas fa-plus"></i> Service Control
+        </h3>
+    </div>
+    
+    <form method="POST" action="{{ url_for('admin.control_service_route') }}">
+        {{ csrf_token() }}
+        <div class="grid grid-3">
+            <div class="form-group">
+                <label class="form-label">Service Name</label>
+                <select name="service" class="form-control" required>
+                    <option value="">Select a service...</option>
+                    <option value="openvpn">OpenVPN</option>
+                    <option value="squid">Squid Proxy</option>
+                    <option value="nginx">Nginx</option>
+                    <option value="apache2">Apache2</option>
+                    <option value="ssh">SSH</option>
+                    <option value="ufw">UFW Firewall</option>
+                    <option value="fail2ban">Fail2Ban</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Action</label>
+                <select name="action" class="form-control" required>
+                    <option value="">Select an action...</option>
+                    <option value="start">Start</option>
+                    <option value="stop">Stop</option>
+                    <option value="restart">Restart</option>
+                    <option value="enable">Enable (Auto-start)</option>
+                    <option value="disable">Disable (No auto-start)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <i class="fas fa-cog"></i> Execute
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h4 class="card-title">
+            <i class="fas fa-exclamation-triangle"></i> Important Notes
+        </h4>
+    </div>
+    <ul style="margin: 0; padding-left: 20px;">
+        <li>Service control requires sudo privileges</li>
+        <li>Some services may take a few seconds to start/stop</li>
+        <li>Check system logs if services fail to start</li>
+        <li>Be careful when stopping critical services like SSH</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function controlService(service, action) {
+    if (confirm(`Are you sure you want to ${action} ${service}?`)) {
+        fetch('/admin/control_service', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: `service=${service}&action=${action}`
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Service control failed. Check console for details.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error controlling service: ' + error.message);
+        });
+    }
+}
+
+function refreshServices() {
+    location.reload();
+}
+</script>
+{% endblock %}

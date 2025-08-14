@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}System Metrics - Ubuntu Server Dashboard{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="fas fa-chart-line"></i> System Metrics & Performance
+        </h3>
+        <a href="{{ url_for('main.index') }}" class="btn btn-info">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+    
+    {% if metrics %}
+    <div style="margin-bottom: 20px;">
+        <h4><i class="fas fa-clock"></i> Recent System Performance</h4>
+        <div class="grid grid-2">
+            {% set latest = metrics[0] %}
+            <div class="card">
+                <h5><i class="fas fa-microchip"></i> CPU Usage</h5>
+                <div style="font-size: 2rem; font-weight: bold; color: var(--primary-color);">
+                    {{ "%.1f"|format(latest.cpu_percent) }}%
+                </div>
+            </div>
+            <div class="card">
+                <h5><i class="fas fa-memory"></i> Memory Usage</h5>
+                <div style="font-size: 2rem; font-weight: bold; color: var(--info-color);">
+                    {{ "%.1f"|format(latest.memory_percent) }}%
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+        <h4><i class="fas fa-history"></i> Historical Data</h4>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; background: rgba(255,255,255,0.1); border-radius: 8px;">
+                <thead>
+                    <tr style="background: rgba(255,255,255,0.2);">
+                        <th style="padding: 15px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.3);">Timestamp</th>
+                        <th style="padding: 15px; text-align: right; border-bottom: 1px solid rgba(255,255,255,0.3);">CPU %</th>
+                        <th style="padding: 15px; text-align: right; border-bottom: 1px solid rgba(255,255,255,0.3);">Memory %</th>
+                        <th style="padding: 15px; text-align: right; border-bottom: 1px solid rgba(255,255,255,0.3);">Disk %</th>
+                        <th style="padding: 15px; text-align: right; border-bottom: 1px solid rgba(255,255,255,0.3);">Load Avg</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for metric in metrics[:20] %}
+                    <tr>
+                        <td style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            {{ metric.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}
+                        </td>
+                        <td style="padding: 10px; text-align: right; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <span style="color: {{ '#28a745' if metric.cpu_percent < 70 else '#ffc107' if metric.cpu_percent < 90 else '#dc3545' }};">
+                                {{ "%.1f"|format(metric.cpu_percent) }}%
+                            </span>
+                        </td>
+                        <td style="padding: 10px; text-align: right; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <span style="color: {{ '#28a745' if metric.memory_percent < 70 else '#ffc107' if metric.memory_percent < 90 else '#dc3545' }};">
+                                {{ "%.1f"|format(metric.memory_percent) }}%
+                            </span>
+                        </td>
+                        <td style="padding: 10px; text-align: right; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <span style="color: {{ '#28a745' if metric.disk_percent < 80 else '#ffc107' if metric.disk_percent < 95 else '#dc3545' }};">
+                                {{ "%.1f"|format(metric.disk_percent) }}%
+                            </span>
+                        </td>
+                        <td style="padding: 10px; text-align: right; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            {{ metric.load_average if metric.load_average else 'N/A' }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h4 class="card-title">
+                <i class="fas fa-chart-area"></i> Performance Overview
+            </h4>
+        </div>
+        <div class="grid grid-3">
+            {% if metrics and metrics | length > 0 %}
+            {% set cpu_avg = (metrics | sum(attribute='cpu_percent')) / (metrics | length) %}
+            {% set mem_avg = (metrics | sum(attribute='memory_percent')) / (metrics | length) %}
+            {% set disk_avg = (metrics | sum(attribute='disk_percent')) / (metrics | length) %}
+            {% else %}
+            {% set cpu_avg = 0 %}
+            {% set mem_avg = 0 %}
+            {% set disk_avg = 0 %}
+            {% endif %}
+            
+            <div style="text-align: center;">
+                <h5>Average CPU Usage</h5>
+                <div style="font-size: 1.5rem; font-weight: bold; color: {{ '#28a745' if cpu_avg < 70 else '#ffc107' if cpu_avg < 90 else '#dc3545' }};">
+                    {{ "%.1f"|format(cpu_avg) }}%
+                </div>
+                <div style="font-size: 0.9rem; color: rgba(255,255,255,0.7);">
+                    Last {{ metrics | length }} measurements
+                </div>
+            </div>
+            
+            <div style="text-align: center;">
+                <h5>Average Memory Usage</h5>
+                <div style="font-size: 1.5rem; font-weight: bold; color: {{ '#28a745' if mem_avg < 70 else '#ffc107' if mem_avg < 90 else '#dc3545' }};">
+                    {{ "%.1f"|format(mem_avg) }}%
+                </div>
+                <div style="font-size: 0.9rem; color: rgba(255,255,255,0.7);">
+                    Last {{ metrics | length }} measurements
+                </div>
+            </div>
+            
+            <div style="text-align: center;">
+                <h5>Average Disk Usage</h5>
+                <div style="font-size: 1.5rem; font-weight: bold; color: {{ '#28a745' if disk_avg < 80 else '#ffc107' if disk_avg < 95 else '#dc3545' }};">
+                    {{ "%.1f"|format(disk_avg) }}%
+                </div>
+                <div style="font-size: 0.9rem; color: rgba(255,255,255,0.7);">
+                    Last {{ metrics | length }} measurements
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% else %}
+    <div style="text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.6);">
+        <i class="fas fa-chart-line" style="font-size: 3rem; margin-bottom: 20px;"></i>
+        <h4>No Metrics Available</h4>
+        <p>System metrics have not been collected yet.</p>
+        <p>Metrics are automatically collected every 5 minutes when the application is running.</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h4 class="card-title">
+            <i class="fas fa-info-circle"></i> Metrics Information
+        </h4>
+    </div>
+    <div style="color: rgba(255,255,255,0.8);">
+        <div class="grid grid-2">
+            <div>
+                <h5><i class="fas fa-cog"></i> Data Collection</h5>
+                <ul>
+                    <li>Metrics are collected automatically every 5 minutes</li>
+                    <li>Data includes CPU, Memory, Disk usage and Load Average</li>
+                    <li>Historical data is stored in the database</li>
+                    <li>Only the most recent 100 entries are displayed</li>
+                </ul>
+            </div>
+            <div>
+                <h5><i class="fas fa-palette"></i> Color Legend</h5>
+                <ul>
+                    <li><span style="color: #28a745;">🟢 Green:</span> Normal usage (< 70% CPU/Memory, < 80% Disk)</li>
+                    <li><span style="color: #ffc107;">🟡 Yellow:</span> High usage (70-90% CPU/Memory, 80-95% Disk)</li>
+                    <li><span style="color: #dc3545;">🔴 Red:</span> Critical usage (> 90% CPU/Memory, > 95% Disk)</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <h5><i class="fas fa-lightbulb"></i> Performance Tips</h5>
+            <div class="grid grid-2">
+                <div>
+                    <strong>High CPU Usage:</strong>
+                    <ul style="font-size: 0.9rem;">
+                        <li>Check running processes with <code>top</code> command</li>
+                        <li>Look for runaway processes</li>
+                        <li>Consider upgrading hardware</li>
+                    </ul>
+                </div>
+                <div>
+                    <strong>High Memory Usage:</strong>
+                    <ul style="font-size: 0.9rem;">
+                        <li>Check memory usage with <code>free -h</code></li>
+                        <li>Restart memory-intensive services</li>
+                        <li>Add more RAM if consistently high</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-refresh metrics every 60 seconds
+setInterval(function() {
+    if (document.visibilityState === 'visible') {
+        window.location.reload();
+    }
+}, 60000);
+</script>
+{% endblock %}

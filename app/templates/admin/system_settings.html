@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}System Settings - Ubuntu Server Dashboard{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="fas fa-cog"></i> System Settings
+        </h3>
+    </div>
+    
+    <div class="grid grid-2">
+        <div class="card" style="margin: 0;">
+            <div class="card-header">
+                <h4 class="card-title">
+                    <i class="fas fa-database"></i> Database Management
+                </h4>
+            </div>
+            <div style="text-align: center;">
+                <p>Manage the application database</p>
+                <button class="btn btn-warning" onclick="backupDatabase()">
+                    <i class="fas fa-download"></i> Backup Database
+                </button>
+                <button class="btn btn-danger" onclick="resetDatabase()" style="margin-top: 10px;">
+                    <i class="fas fa-exclamation-triangle"></i> Reset Database
+                </button>
+            </div>
+        </div>
+        
+        <div class="card" style="margin: 0;">
+            <div class="card-header">
+                <h4 class="card-title">
+                    <i class="fas fa-shield-alt"></i> Security Settings
+                </h4>
+            </div>
+            <div style="text-align: center;">
+                <p>Configure security options</p>
+                <button class="btn btn-info" onclick="viewSecurityLogs()">
+                    <i class="fas fa-eye"></i> View Security Logs
+                </button>
+                <button class="btn btn-warning" onclick="clearSessions()" style="margin-top: 10px;">
+                    <i class="fas fa-sign-out-alt"></i> Clear All Sessions
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" style="margin-top: 20px;">
+        <div class="card-header">
+            <h4 class="card-title">
+                <i class="fas fa-info-circle"></i> Application Information
+            </h4>
+        </div>
+        <div class="grid grid-3">
+            <div>
+                <strong>Version:</strong><br>
+                Ubuntu Dashboard v2.0.0
+            </div>
+            <div>
+                <strong>Framework:</strong><br>
+                Flask {{ config.get('FLASK_VERSION', 'Unknown') }}
+            </div>
+            <div>
+                <strong>Database:</strong><br>
+                SQLite
+            </div>
+            <div>
+                <strong>Environment:</strong><br>
+                {{ config.get('FLASK_ENV', 'Unknown') }}
+            </div>
+            <div>
+                <strong>Debug Mode:</strong><br>
+                {{ 'Enabled' if config.get('DEBUG') else 'Disabled' }}
+            </div>
+            <div>
+                <strong>CSRF Protection:</strong><br>
+                {{ 'Enabled' if config.get('WTF_CSRF_ENABLED') else 'Disabled' }}
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" style="margin-top: 20px;">
+        <div class="card-header">
+            <h4 class="card-title">
+                <i class="fas fa-chart-line"></i> System Statistics
+            </h4>
+        </div>
+        <div class="grid grid-4" id="system-stats">
+            <div style="text-align: center;">
+                <h5>Total Users</h5>
+                <p style="font-size: 1.5rem; font-weight: bold; color: var(--primary-color);" id="total-users">
+                    Loading...
+                </p>
+            </div>
+            <div style="text-align: center;">
+                <h5>Active Sessions</h5>
+                <p style="font-size: 1.5rem; font-weight: bold; color: var(--success-color);" id="active-sessions">
+                    Loading...
+                </p>
+            </div>
+            <div style="text-align: center;">
+                <h5>Chat Messages</h5>
+                <p style="font-size: 1.5rem; font-weight: bold; color: var(--info-color);" id="chat-messages">
+                    Loading...
+                </p>
+            </div>
+            <div style="text-align: center;">
+                <h5>Audit Logs</h5>
+                <p style="font-size: 1.5rem; font-weight: bold; color: var(--warning-color);" id="audit-logs">
+                    Loading...
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h4 class="card-title">
+            <i class="fas fa-exclamation-triangle"></i> Maintenance Actions
+        </h4>
+    </div>
+    <div style="text-align: center;">
+        <div style="margin-bottom: 20px;">
+            <p><strong>Warning:</strong> These actions may affect system operation. Use with caution.</p>
+        </div>
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+            <button class="btn btn-warning" onclick="cleanupLogs()">
+                <i class="fas fa-broom"></i> Cleanup Old Logs
+            </button>
+            <button class="btn btn-info" onclick="optimizeDatabase()">
+                <i class="fas fa-database"></i> Optimize Database
+            </button>
+            <button class="btn btn-danger" onclick="restartApplication()">
+                <i class="fas fa-power-off"></i> Restart Application
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Load system statistics
+function loadSystemStats() {
+    fetch('/api/dashboard_stats')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('total-users').textContent = data.user_count || 'N/A';
+            document.getElementById('chat-messages').textContent = data.chat_message_count || '0';
+            // Note: Active sessions and audit logs would need additional endpoints
+            document.getElementById('active-sessions').textContent = 'N/A';
+            document.getElementById('audit-logs').textContent = 'N/A';
+        })
+        .catch(error => {
+            console.error('Error loading stats:', error);
+        });
+}
+
+function backupDatabase() {
+    if (confirm('Create a backup of the database?')) {
+        alert('Database backup functionality would be implemented here.');
+    }
+}
+
+function resetDatabase() {
+    if (confirm('WARNING: This will delete ALL data and reset the database. Are you sure?')) {
+        if (confirm('This action cannot be undone. Proceed?')) {
+            alert('Database reset functionality would be implemented here.');
+        }
+    }
+}
+
+function viewSecurityLogs() {
+    window.location.href = '/admin/audit_logs';
+}
+
+function clearSessions() {
+    if (confirm('Clear all user sessions? This will log out all users.')) {
+        alert('Session clearing functionality would be implemented here.');
+    }
+}
+
+function cleanupLogs() {
+    if (confirm('Remove logs older than 30 days?')) {
+        alert('Log cleanup functionality would be implemented here.');
+    }
+}
+
+function optimizeDatabase() {
+    if (confirm('Optimize database? This may take a few moments.')) {
+        alert('Database optimization functionality would be implemented here.');
+    }
+}
+
+function restartApplication() {
+    if (confirm('Restart the application? This will temporarily disconnect all users.')) {
+        alert('Application restart functionality would be implemented here.');
+    }
+}
+
+// Load stats on page load
+document.addEventListener('DOMContentLoaded', loadSystemStats);
+</script>
+{% endblock %}

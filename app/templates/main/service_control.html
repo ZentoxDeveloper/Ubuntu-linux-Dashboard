@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Service Control - Ubuntu Server Dashboard{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="fas fa-cogs"></i> Service Control Panel
+        </h3>
+        <a href="{{ url_for('main.index') }}" class="btn btn-info">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+        <form method="POST" style="display: inline;">
+            {{ form.hidden_tag() }}
+            <div style="display: flex; gap: 10px; align-items: center;">
+                {{ form.service(class="form-control", style="width: 200px;", placeholder="Service name (e.g., apache2)") }}
+                <button type="submit" name="action" value="status" class="btn btn-info">
+                    <i class="fas fa-question-circle"></i> Check Status
+                </button>
+                <button type="submit" name="action" value="start" class="btn btn-success">
+                    <i class="fas fa-play"></i> Start
+                </button>
+                <button type="submit" name="action" value="stop" class="btn btn-danger">
+                    <i class="fas fa-stop"></i> Stop
+                </button>
+                <button type="submit" name="action" value="restart" class="btn btn-warning">
+                    <i class="fas fa-sync"></i> Restart
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {% if result %}
+    <div class="alert alert-info">
+        <h5><i class="fas fa-terminal"></i> Command Result:</h5>
+        <pre style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 5px; overflow-x: auto;">{{ result }}</pre>
+    </div>
+    {% endif %}
+
+    {% if common_services %}
+    <h4><i class="fas fa-list"></i> Common Services</h4>
+    <div class="grid grid-2">
+        {% for service in common_services %}
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h5>{{ service.name }}</h5>
+                    <p style="margin: 0; font-size: 0.9rem; color: rgba(255,255,255,0.7);">{{ service.description }}</p>
+                </div>
+                <div style="display: flex; gap: 5px;">
+                    <form method="POST" style="display: inline;">
+                        {{ form.hidden_tag() }}
+                        <input type="hidden" name="service" value="{{ service.name }}">
+                        <button type="submit" name="action" value="status" class="btn btn-info btn-sm">
+                            <i class="fas fa-question-circle"></i>
+                        </button>
+                        <button type="submit" name="action" value="start" class="btn btn-success btn-sm">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <button type="submit" name="action" value="stop" class="btn btn-danger btn-sm">
+                            <i class="fas fa-stop"></i>
+                        </button>
+                        <button type="submit" name="action" value="restart" class="btn btn-warning btn-sm">
+                            <i class="fas fa-sync"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h4 class="card-title">
+            <i class="fas fa-info-circle"></i> Service Management Information
+        </h4>
+    </div>
+    <div style="color: rgba(255,255,255,0.8);">
+        <h5>Available Actions:</h5>
+        <ul>
+            <li><strong>Status:</strong> Check if a service is running</li>
+            <li><strong>Start:</strong> Start a stopped service</li>
+            <li><strong>Stop:</strong> Stop a running service</li>
+            <li><strong>Restart:</strong> Stop and start a service</li>
+        </ul>
+        
+        <h5>Common Service Names:</h5>
+        <ul style="column-count: 2; column-gap: 30px;">
+            <li>apache2 - Apache Web Server</li>
+            <li>nginx - Nginx Web Server</li>
+            <li>mysql - MySQL Database</li>
+            <li>postgresql - PostgreSQL Database</li>
+            <li>ssh - SSH Server</li>
+            <li>smbd - Samba File Server</li>
+            <li>nmbd - NetBIOS Name Server</li>
+            <li>cron - Cron Job Scheduler</li>
+            <li>docker - Docker Engine</li>
+            <li>fail2ban - Intrusion Prevention</li>
+        </ul>
+        
+        <div style="margin-top: 20px; padding: 15px; background: rgba(255,193,7,0.2); border-radius: 5px; border-left: 4px solid #ffc107;">
+            <strong>⚠️ Warning:</strong> Service control requires sudo privileges. Make sure the web server user has appropriate permissions configured in sudoers.
+        </div>
+    </div>
+</div>
+{% endblock %}
